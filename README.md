@@ -1,7 +1,7 @@
 # CSV File Import Feature
 
 ## Overview
-The CSV File Import feature allows users to upload CSV files containing product data to efficiently update existing nodes or create new nodes in Drupal 8 / 9. This feature is designed to streamline the process of managing product information in bulk.
+The CSV File Import feature allows users to upload CSV files containing product data to efficiently update existing nodes or create new nodes in Drupal 8 / 9 / 10. This feature is designed to streamline the process of managing product information in bulk.
 ## How it Works
 1. **Upload CSV File:** Users can upload a CSV file containing product information using the provided form.
 2. **CSV Data Mapping:** The feature maps the header values in the CSV file to corresponding fields in Drupal nodes.
