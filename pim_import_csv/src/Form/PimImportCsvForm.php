@@ -192,20 +192,20 @@ class PimImportCsvForm extends FormBase {
           $batch = [
             'operations' => [],
             'finished' => [$this, 'batchFinished'],
-            'title' => t('PIM CSV Import'),
-            'init_message' => t('Starting node creation or updation process.'),
-            'progress_message' => t('Processed @current out of @total values.'),
-            'error_message' => t('Error occurred during node creation/updation process.'),
+            'title' => $this->t('PIM CSV Import'),
+            'init_message' => $this->t('Starting node creation or updation process.'),
+            'progress_message' => $this->t('Processed @current out of @total values.'),
+            'error_message' => $this->t('Error occurred during node creation/updation process.'),
           ];
           foreach ($csv_rows as $row) {
             // Map header values to keys for the current data row.
             $mapped_data = array_combine($header_row, $row);
             // Check if "product_sku" is a key in the mapped data.
             if (isset($mapped_data['product_sku'])) {
-              $batch['operations'][] = array(
+              $batch['operations'][] = [
                 [$this, 'processBatchRow'],
                 [$mapped_data],
-              );
+              ];
             }
           }
           batch_set($batch);
@@ -235,8 +235,6 @@ class PimImportCsvForm extends FormBase {
     // Check if "product_sku" is a key in the mapped data.
     if (isset($mapped_data['product_sku'])) {
       $product_sku = $mapped_data['product_sku'];
-      $product_name = $mapped_data['product_name'];
-
       // Check if a node with the same SKU already exists.
       $query = $this->entityManager->getStorage('node')->getQuery()
         ->accessCheck(FALSE)
@@ -249,7 +247,8 @@ class PimImportCsvForm extends FormBase {
         $existing_nid = reset($existing_nids);
         $node = $this->entityManager->getStorage('node')->load($existing_nid);
         $this->setNodeFieldValues($node, $mapped_data);
-      } else {
+      }
+      else {
         // Create a new node if it doesn't exist.
         $node = Node::create([
           'type' => 'product',
@@ -257,12 +256,15 @@ class PimImportCsvForm extends FormBase {
         $this->setNodeFieldValues($node, $mapped_data);
       }
       // Update the batch progress.
-      $context['message'] = t('Processed SKU @sku', ['@sku' => $product_sku]);
+      $context['message'] = $this->t('Processed SKU @sku', ['@sku' => $product_sku]);
     }
   }
 
-  protected function setNodeFieldValues(Node $node, array $mapped_data){
-    $node->set('title',$mapped_data['product_name']);
+  /**
+   * Function to Set Node field values.
+   */
+  protected function setNodeFieldValues(Node $node, array $mapped_data) {
+    $node->set('title', $mapped_data['product_name']);
     // Additional fields to handle blank cells.
     $fields_to_handle_blank = [
       'product_sku' => 'field_product_code',
@@ -285,7 +287,7 @@ class PimImportCsvForm extends FormBase {
     }
     // Handle category field.
     if (isset($mapped_data['category.product_category'])) {
-      if($mapped_data['category.product_category'] !== '' && $mapped_data['category.product_category'] !== 'NULL'){
+      if ($mapped_data['category.product_category'] !== '' && $mapped_data['category.product_category'] !== 'NULL') {
         $category_value = $mapped_data['category.product_category'];
         // Check if the vocabulary exists.
         $vocabulary_machine_name = 'product_category';
@@ -305,22 +307,22 @@ class PimImportCsvForm extends FormBase {
         // Set the category field.
         $node->set('field_category', $term_id);
       }
-      elseif ($mapped_data['category.product_category'] == 'NULL'){
+      elseif ($mapped_data['category.product_category'] == 'NULL') {
         $node->set('field_category', NULL);
       }
     }
 
     // Process the "field_product_attributes" text field.
     if (isset($mapped_data['product_features'])) {
-      if ($mapped_data['product_features'] !== '' && $mapped_data['product_features'] !== 'NULL'){
+      if ($mapped_data['product_features'] !== '' && $mapped_data['product_features'] !== 'NULL') {
         $features = explode(',', $mapped_data['product_features']);
         // Remove any leading whitespace from each feature.
         $features = array_map('trim', $features);
         // Assign the features to the text field.
         $node->set('field_product_features', $features);
       }
-      elseif ($mapped_data['product_features'] == 'NULL'){
-          $node->set('field_product_features', NULL);
+      elseif ($mapped_data['product_features'] == 'NULL') {
+        $node->set('field_product_features', NULL);
       }
     }
 
@@ -339,42 +341,50 @@ class PimImportCsvForm extends FormBase {
       $existing_weight_value = $existing_attributes_paragraph->get('field_weight')->value;
     }
     // Check if the quantity field is not empty in the CSV data.
-    if (isset($mapped_data['product_attributes.quantity'])){
-      if ($mapped_data['product_attributes.quantity'] !== '' && $mapped_data['product_attributes.quantity'] !== 'NULL'){
+    if (isset($mapped_data['product_attributes.quantity'])) {
+      if ($mapped_data['product_attributes.quantity'] !== '' && $mapped_data['product_attributes.quantity'] !== 'NULL') {
         $quantity = $mapped_data['product_attributes.quantity'];
-      } elseif ($mapped_data['product_attributes.quantity'] == 'NULL') {
+      }
+      elseif ($mapped_data['product_attributes.quantity'] == 'NULL') {
         $quantity = '';
-      } else {
+      }
+      else {
         $quantity = $existing_quantity_value;
       }
     }
     // Check if the size field is not empty in the CSV data.
-    if (isset($mapped_data['product_attributes.size'])){
-      if($mapped_data['product_attributes.size'] !== '' && $mapped_data['product_attributes.size'] !== 'NULL'){
+    if (isset($mapped_data['product_attributes.size'])) {
+      if ($mapped_data['product_attributes.size'] !== '' && $mapped_data['product_attributes.size'] !== 'NULL') {
         $size = $mapped_data['product_attributes.size'];
-      } elseif ($mapped_data['product_attributes.size'] == 'NULL') {
+      }
+      elseif ($mapped_data['product_attributes.size'] == 'NULL') {
         $size = '';
-      } else {
+      }
+      else {
         $size = $existing_size_value;
       }
     }
     // Check if the color field is not empty in the CSV data.
-    if (isset($mapped_data['product_attributes.color'])){
-      if($mapped_data['product_attributes.color'] !== '' && $mapped_data['product_attributes.color'] !== 'NULL'){
+    if (isset($mapped_data['product_attributes.color'])) {
+      if ($mapped_data['product_attributes.color'] !== '' && $mapped_data['product_attributes.color'] !== 'NULL') {
         $color = $mapped_data['product_attributes.color'];
-      } elseif ($mapped_data['product_attributes.color'] == 'NULL') {
+      }
+      elseif ($mapped_data['product_attributes.color'] == 'NULL') {
         $color = '';
-      } else {
+      }
+      else {
         $color = $existing_color_value;
       }
     }
     // Check if the weught field is not empty in the CSV data.
-    if (isset($mapped_data['product_attributes.weight'])){
-      if($mapped_data['product_attributes.weight'] !== '' && $mapped_data['product_attributes.weight'] !== 'NULL'){
+    if (isset($mapped_data['product_attributes.weight'])) {
+      if ($mapped_data['product_attributes.weight'] !== '' && $mapped_data['product_attributes.weight'] !== 'NULL') {
         $weight = $mapped_data['product_attributes.weight'];
-      } elseif ($mapped_data['product_attributes.weight'] == 'NULL') {
+      }
+      elseif ($mapped_data['product_attributes.weight'] == 'NULL') {
         $weight = '';
-      } else {
+      }
+      else {
         $weight = $existing_weight_value;
       }
     }
@@ -385,7 +395,7 @@ class PimImportCsvForm extends FormBase {
       'field_quantity' => $quantity,
       'field_size' => $size,
       'field_color' => $color,
-      'field_weight' => $weight
+      'field_weight' => $weight,
     ]);
 
     $this->attachParagraphToNode($node, $attribute_paragraph, 'field_product_attributes');
@@ -405,7 +415,7 @@ class PimImportCsvForm extends FormBase {
     }
     // Process 'marketing.sales_copy' column.
     if (isset($mapped_data['marketing.sales_copy'])) {
-      if ($mapped_data['marketing.sales_copy'] !== '' && $mapped_data['marketing.sales_copy'] !== 'NULL'){
+      if ($mapped_data['marketing.sales_copy'] !== '' && $mapped_data['marketing.sales_copy'] !== 'NULL') {
         $sales_copy_urls = explode(',', $mapped_data['marketing.sales_copy']);
         $sales_copy_urls = array_map('trim', $sales_copy_urls);
         // Define the directory where you want to save the files.
@@ -416,16 +426,18 @@ class PimImportCsvForm extends FormBase {
           // Set 'field_sales_copy' to the media IDs.
           $sales_copy = $sales_copy_ids;
         }
-      } elseif ($mapped_data['marketing.sales_copy'] == 'NULL'){
+      }
+      elseif ($mapped_data['marketing.sales_copy'] == 'NULL') {
         $sales_copy = [];
-      } else {
+      }
+      else {
         $sales_copy = $existing_sales_copy;
       }
     }
 
     // Process 'marketing.social_media_content' column.
     if (isset($mapped_data['marketing.social_media_content'])) {
-      if ($mapped_data['marketing.social_media_content'] !== '' && $mapped_data['marketing.social_media_content'] !== 'NULL'){
+      if ($mapped_data['marketing.social_media_content'] !== '' && $mapped_data['marketing.social_media_content'] !== 'NULL') {
         $social_media_content_urls = explode(',', $mapped_data['marketing.social_media_content']);
         $social_media_content_urls = array_map('trim', $social_media_content_urls);
         // Define the directory where you want to save the files.
@@ -436,16 +448,18 @@ class PimImportCsvForm extends FormBase {
           // Set 'field_sales_copy' to the media IDs.
           $social_media_content = $social_media_ids;
         }
-      } elseif ($mapped_data['marketing.social_media_content'] == 'NULL'){
+      }
+      elseif ($mapped_data['marketing.social_media_content'] == 'NULL') {
         $social_media_content = [];
-      } else {
+      }
+      else {
         $social_media_content = $existing_social_media_content;
       }
     }
 
     // Process 'marketing.user_guides' column.
     if (isset($mapped_data['marketing.user_guides'])) {
-      if ($mapped_data['marketing.user_guides'] !== '' && $mapped_data['marketing.user_guides'] !== 'NULL'){
+      if ($mapped_data['marketing.user_guides'] !== '' && $mapped_data['marketing.user_guides'] !== 'NULL') {
         $user_guide_urls = explode(',', $mapped_data['marketing.user_guides']);
         $user_guide_urls = array_map('trim', $user_guide_urls);
         // Define the directory where you want to save the files.
@@ -456,9 +470,11 @@ class PimImportCsvForm extends FormBase {
           // Set 'field_pim_user_guides' to the media IDs.
           $user_guides = $user_guide_ids;
         }
-      } elseif ($mapped_data['marketing.user_guides'] == 'NULL'){
+      }
+      elseif ($mapped_data['marketing.user_guides'] == 'NULL') {
         $user_guides = [];
-      } else {
+      }
+      else {
         $user_guides = $existing_user_guide;
       }
     }
@@ -489,7 +505,7 @@ class PimImportCsvForm extends FormBase {
 
     // Process 'assets.image' column.
     if (isset($mapped_data['assets.image'])) {
-      if ($mapped_data['assets.image'] !== '' && $mapped_data['assets.image'] !== 'NULL'){
+      if ($mapped_data['assets.image'] !== '' && $mapped_data['assets.image'] !== 'NULL') {
         $image_urls = explode(',', $mapped_data['assets.image']);
         $image_urls = array_map('trim', $image_urls);
         // Define the directory where you want to save the files.
@@ -507,7 +523,7 @@ class PimImportCsvForm extends FormBase {
           $this->messenger->addWarning($this->t('Assets Image value is empty'));
         }
       }
-      elseif ($mapped_data['assets.image'] == 'NULL'){
+      elseif ($mapped_data['assets.image'] == 'NULL') {
         $asset_image = [];
       }
       else {
@@ -517,7 +533,7 @@ class PimImportCsvForm extends FormBase {
 
     // Process 'assets.video' column.
     if (isset($mapped_data['assets.video'])) {
-      if ($mapped_data['assets.video'] !== '' && $mapped_data['assets.video'] !== 'NULL'){
+      if ($mapped_data['assets.video'] !== '' && $mapped_data['assets.video'] !== 'NULL') {
         $video_urls = explode(',', $mapped_data['assets.video']);
         $video_urls = array_map('trim', $video_urls);
         // Define the directory where you want to save the files.
@@ -533,7 +549,7 @@ class PimImportCsvForm extends FormBase {
           $this->messenger->addWarning($this->t('Assets Video value is empty'));
         }
       }
-      elseif ($mapped_data['assets.video'] == 'NULL'){
+      elseif ($mapped_data['assets.video'] == 'NULL') {
         $asset_video = [];
       }
       else {
@@ -543,7 +559,7 @@ class PimImportCsvForm extends FormBase {
 
     // Process 'assets.audio' column.
     if (isset($mapped_data['assets.audio'])) {
-      if ($mapped_data['assets.audio'] !== '' && $mapped_data['assets.audio'] !== 'NULL'){
+      if ($mapped_data['assets.audio'] !== '' && $mapped_data['assets.audio'] !== 'NULL') {
         $audio_urls = explode(',', $mapped_data['assets.audio']);
         $audio_urls = array_map('trim', $audio_urls);
         // Define the directory where you want to save the files.
@@ -559,7 +575,7 @@ class PimImportCsvForm extends FormBase {
           $this->messenger->addWarning($this->t('Assets Audio value is empty'));
         }
       }
-      elseif ($mapped_data['assets.audio'] == 'NULL'){
+      elseif ($mapped_data['assets.audio'] == 'NULL') {
         $asset_audio = [];
       }
       else {
@@ -569,7 +585,7 @@ class PimImportCsvForm extends FormBase {
 
     // Process 'assets.document' column.
     if (isset($mapped_data['assets.pdf'])) {
-      if($mapped_data['assets.pdf'] !== '' && $mapped_data['assets.pdf'] !== 'NULL'){
+      if ($mapped_data['assets.pdf'] !== '' && $mapped_data['assets.pdf'] !== 'NULL') {
         $pdf_urls = explode(',', $mapped_data['assets.pdf']);
         $pdf_urls = array_map('trim', $pdf_urls);
         // Define the directory where you want to save the files.
@@ -585,7 +601,7 @@ class PimImportCsvForm extends FormBase {
           $this->messenger->addWarning($this->t('Assets PDF value is empty'));
         }
       }
-      elseif($mapped_data['assets.pdf'] == 'NULL'){
+      elseif ($mapped_data['assets.pdf'] == 'NULL') {
         $asset_pdf = [];
       }
       else {
@@ -601,7 +617,7 @@ class PimImportCsvForm extends FormBase {
       'field_assets_audio' => $asset_audio,
       'field_asset_pdf' => $asset_pdf,
     ]);
-    // Save and attach the assets paragraph entity
+    // Save and attach the assets paragraph entity.
     $this->attachParagraphToNode($node, $assets_paragraph, 'field_upload_assets');
     /* End - Assets Section */
 
@@ -628,17 +644,17 @@ class PimImportCsvForm extends FormBase {
       $existing_prd_segment = $product_group_paragraph->get('field_segment')->getValue();
     }
     // Process 'prod_grp.model' column.
-    $prod_grp_model = $this->getParagraphFieldValue($mapped_data['prod_grp.model'],$existing_prd_model);
+    $prod_grp_model = $this->getParagraphFieldValue($mapped_data['prod_grp.model'], $existing_prd_model);
     // Process 'prod_grp.part_number' column.
-    $prod_grp_part_number = $this->getParagraphFieldValue($mapped_data['prod_grp.part_number'],$existing_prd_part_number);
+    $prod_grp_part_number = $this->getParagraphFieldValue($mapped_data['prod_grp.part_number'], $existing_prd_part_number);
     // Process 'prod_grp.description' column.
-    $prod_grp_description = $this->getParagraphFieldValue($mapped_data['prod_grp.description'],$existing_prd_description);
+    $prod_grp_description = $this->getParagraphFieldValue($mapped_data['prod_grp.description'], $existing_prd_description);
     // Process 'prod_grp.marketing_description' column.
     $prod_grp_marketing_description = $this->getParagraphFieldValue($mapped_data['prod_grp.marketing_description'], $existing_marketing_description);
 
     // Process 'prod_grp.warranty' column.
     if (isset($mapped_data['prod_grp.warranty'])) {
-      if($mapped_data['prod_grp.warranty'] !== '' && $mapped_data['prod_grp.warranty'] !== 'NULL'){
+      if ($mapped_data['prod_grp.warranty'] !== '' && $mapped_data['prod_grp.warranty'] !== 'NULL') {
         $product_warranty_data = (int) $mapped_data['prod_grp.warranty'];
         // Check if the value is between 2 and 5.
         if ($product_warranty_data >= 2 && $product_warranty_data <= 5) {
@@ -648,7 +664,7 @@ class PimImportCsvForm extends FormBase {
           $this->messenger->addWarning($this->t('Product Group Warranty value should be between 2 and 5'));
         }
       }
-      elseif($mapped_data['prod_grp.warranty'] == 'NULL'){
+      elseif ($mapped_data['prod_grp.warranty'] == 'NULL') {
         $product_warranty = '';
       }
       else {
@@ -664,7 +680,7 @@ class PimImportCsvForm extends FormBase {
 
     // Process 'prod_grp.upc' column.
     if (isset($mapped_data['prod_grp.upc'])) {
-      if ($mapped_data['prod_grp.upc'] !== '' && $mapped_data['prod_grp.upc'] !== 'NULL'){
+      if ($mapped_data['prod_grp.upc'] !== '' && $mapped_data['prod_grp.upc'] !== 'NULL') {
         $product_upc_value = (int) $mapped_data['prod_grp.upc'];
         // Check if a paragraph with the same UPC already exists.
         $query = $this->entityManager->getStorage('paragraph')->getQuery()
@@ -682,11 +698,11 @@ class PimImportCsvForm extends FormBase {
           $this->messenger->addWarning($this->t('Product Group UPC value should be Unique and Integer Value.'));
         }
       }
-      elseif ($mapped_data['prod_grp.upc'] == 'NULL'){
-          $product_upc = '';
+      elseif ($mapped_data['prod_grp.upc'] == 'NULL') {
+        $product_upc = '';
       }
       else {
-          $product_upc = $existing_prd_upc;
+        $product_upc = $existing_prd_upc;
       }
     }
     // Process 'prod_grp.eccn' column.
@@ -703,15 +719,18 @@ class PimImportCsvForm extends FormBase {
     ];
     // Check if 'prod_grp.segment' set and it's a valid value.
     if (isset($mapped_data['prod_grp.segment'])) {
-      if ($mapped_data['prod_grp.segment'] !== 'NULL' && $mapped_data['prod_grp.segment'] !== ''){
-        if (in_array($mapped_data['prod_grp.segment'], $segment_allowed_values)){
+      if ($mapped_data['prod_grp.segment'] !== 'NULL' && $mapped_data['prod_grp.segment'] !== '') {
+        if (in_array($mapped_data['prod_grp.segment'], $segment_allowed_values)) {
           $product_segment = $mapped_data['prod_grp.segment'];
-        } else {
+        }
+        else {
           $this->messenger->addWarning($this->t('Empty / Invalid value(s) for prod_grp.segment'));
         }
-      } elseif ($mapped_data['prod_grp.segment'] == 'NULL') {
+      }
+      elseif ($mapped_data['prod_grp.segment'] == 'NULL') {
         $product_segment = '';
-      } else {
+      }
+      else {
         $product_segment = $existing_prd_segment;
       }
     }
@@ -731,9 +750,9 @@ class PimImportCsvForm extends FormBase {
       'field_eccn' => $product_eccn,
       'field_series' => $product_series,
       'field_family' => $product_family,
-      'field_segment' =>$product_segment,
+      'field_segment' => $product_segment,
     ]);
-    // Save and attach the product paragraph entity
+    // Save and attach the product paragraph entity.
     $this->attachParagraphToNode($node, $product_paragraph, 'field_product_group');
     /* End - Product Group Section */
 
@@ -796,7 +815,7 @@ class PimImportCsvForm extends FormBase {
 
     }
     // Process 'cert.ul' column.
-    $cert_ul = $this->getParagraphFieldValue($mapped_data['cert.ul'],$existing_cert_ul);
+    $cert_ul = $this->getParagraphFieldValue($mapped_data['cert.ul'], $existing_cert_ul);
     // Process 'cert.fc' column.
     $cert_fc = $this->getParagraphFieldValue($mapped_data['cert.fc'], $existing_cert_fc);
     // Process 'cert.ce' column.
@@ -880,7 +899,7 @@ class PimImportCsvForm extends FormBase {
     $mechanical_paragraph = Paragraph::create([
       'type' => 'mechanical',
       'field_enclosure' => $mech_enclosure,
-      'field_mounting' =>$mech_mounting,
+      'field_mounting' => $mech_mounting,
       'field_abs' => $mech_abs,
       'field_front_wiring_clearance' => $mech_front_wiring,
       'field_top_wiring_clearance' => $mech_top_wiring,
@@ -913,17 +932,17 @@ class PimImportCsvForm extends FormBase {
       $existing_env_storage_temp_min_rating = $environmental_group_paragraph->get('field_storage_temp_min_rating')->getValue();
     }
     // Process env.ip_rating'.
-    $env_ip_rating = $this->setParagraphTaxonomyField('ip_rating', $mapped_data['env.ip_rating'],$existing_env_ip_rating);
+    $env_ip_rating = $this->setParagraphTaxonomyField('ip_rating', $mapped_data['env.ip_rating'], $existing_env_ip_rating);
     // Process env.operating_humidity'.
-    $env_op_humanity = $this->getParagraphFieldValue($mapped_data['env.operating_humidity'],$existing_env_op_humanity);
+    $env_op_humanity = $this->getParagraphFieldValue($mapped_data['env.operating_humidity'], $existing_env_op_humanity);
     // Process env.op_temp_max_rate'.
-    $env_op_temp_max_rating = $this->getParagraphFieldValue($mapped_data['env.op_temp_max_rate'],$existing_env_op_temp_max_rating);
+    $env_op_temp_max_rating = $this->getParagraphFieldValue($mapped_data['env.op_temp_max_rate'], $existing_env_op_temp_max_rating);
     // Process env.op_temp_min_rate'.
     $env_op_temp_min_rating = $this->getParagraphFieldValue($mapped_data['env.op_temp_min_rate'], $existing_env_op_temp_min_rating);
     // Process env.st_temp_max_rate'.
-    $env_storage_temp_max_rating = $this->getParagraphFieldValue($mapped_data['env.st_temp_max_rate'],$existing_env_storage_temp_max_rating);
+    $env_storage_temp_max_rating = $this->getParagraphFieldValue($mapped_data['env.st_temp_max_rate'], $existing_env_storage_temp_max_rating);
     // Process env.st_temp_min_rate'.
-    $env_storage_temp_min_rating = $this->getParagraphFieldValue($mapped_data['env.st_temp_min_rate'],$existing_env_storage_temp_min_rating);
+    $env_storage_temp_min_rating = $this->getParagraphFieldValue($mapped_data['env.st_temp_min_rate'], $existing_env_storage_temp_min_rating);
     // Create environmental group paragraph.
     $environmental_paragraph = Paragraph::create([
       'type' => 'environmental',
@@ -1056,12 +1075,15 @@ class PimImportCsvForm extends FormBase {
     return $media_ids;
   }
 
-  public function getParagraphFieldValue($mapped_data, $existing_data){
-    if (isset($mapped_data)){
-      if ($mapped_data !== '' && $mapped_data !== 'NULL'){
+  /**
+   * Function to get the Paragraph Field values.
+   */
+  public function getParagraphFieldValue($mapped_data, $existing_data) {
+    if (isset($mapped_data)) {
+      if ($mapped_data !== '' && $mapped_data !== 'NULL') {
         $return_data = $mapped_data;
       }
-      elseif($mapped_data == 'NULL'){
+      elseif ($mapped_data == 'NULL') {
         $return_data = '';
       }
       else {
@@ -1105,15 +1127,14 @@ class PimImportCsvForm extends FormBase {
         $return_term_id = $return_term_ids;
       }
       elseif ($field_value == 'NULL') {
-          $return_term_id = '';
+        $return_term_id = '';
       }
       else {
-          $return_term_id = $existing_term_value;
+        $return_term_id = $existing_term_value;
       }
       return $return_term_id;
     }
   }
-
 
   /**
    * Process and set a field with allowed values based on mapped data.
@@ -1121,7 +1142,7 @@ class PimImportCsvForm extends FormBase {
   public function setFieldWithAllowedValues($mapped_data, $field_value, $allowed_values, $existing_value) {
     if (isset($mapped_data[$field_value])) {
       // $return_value = [];
-      if ($mapped_data[$field_value] !== '' && $mapped_data[$field_value] !== 'NULL'){
+      if ($mapped_data[$field_value] !== '' && $mapped_data[$field_value] !== 'NULL') {
         // Split the comma-separated values into an array.
         $values = explode(',', $mapped_data[$field_value]);
         // Filter the values to keep only the allowed ones.
@@ -1134,7 +1155,7 @@ class PimImportCsvForm extends FormBase {
           $this->messenger->addWarning($this->t('Empty / Invalid value(s) for @field_value', ['@field_value' => $field_value]));
         }
       }
-      elseif ($mapped_data[$field_value] == 'NULL'){
+      elseif ($mapped_data[$field_value] == 'NULL') {
         $return_value = [];
       }
       else {
