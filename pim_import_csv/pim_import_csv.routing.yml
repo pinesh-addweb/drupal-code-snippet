@@ -1,0 +1,17 @@
+pim_import_csv.import_form:
+  path: '/admin/product/import/csv'
+  defaults:
+    _form: '\Drupal\pim_import_csv\Form\PimImportCsvForm'
+    _title: 'Product Import using Csv'
+  requirements:
+    _role: 'administrator+product_importer'
+
+pim_import_csv.pim_csv_template_form:
+  path: '/admin/config/product/csv/settings'
+  defaults:
+    _form: '\Drupal\pim_import_csv\Form\PimCsvTemplateForm'
+    _title: 'CSV Template file'
+  requirements:
+    _role: 'administrator'
+  options:
+    _admin_route: TRUE

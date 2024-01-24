@@ -1,0 +1,5 @@
+pim_import_csv.pim_csv_template_form:
+  title: 'Product CSV Template File'
+  description: 'Product CSV Template File.'
+  route_name: pim_import_csv.pim_csv_template_form
+  parent: system.admin_config_system
