@@ -1,0 +1,9 @@
+name = Cookie Consent Banner
+description = Customization of EU Cookie Compliance.
+package = Custom
+core = 7.x
+
+dependencies[] = eu_cookie_compliance
+
+; NEW LINE
+configure = admin/config/system/eu-cookie-compliance

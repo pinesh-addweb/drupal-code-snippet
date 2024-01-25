@@ -1,0 +1,153 @@
+<?php
+
+/**
+ * @file
+ * Contains cookie_consent_banner.module.
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function cookie_consent_banner_form_eu_cookie_compliance_admin_form_alter(&$form, &$form_state, $form_id) {
+  ctools_include('plugins');
+  $eu_ccb_settings = variable_get('eu_ccb_settings', []);
+  $popup_settings = eu_cookie_compliance_get_settings();
+  $form['consent_per_category']['eu_cookie_compliance']['customize_cookie_preferences_button_label'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Customize cookie preferences button label'),
+    '#default_value' => $eu_ccb_settings['customize_cookie_preferences_button_label'],
+  );
+  $form['withdraw_consent']['eu_cookie_compliance']['withdraw_enabled']['#default_value'] = isset($popup_settings['withdraw_enabled']) ? $popup_settings['withdraw_enabled'] : 1;
+
+  $consent_storage_options = array();
+  $consent_storage_options = $form['consent_storage']['eu_cookie_compliance']['consent_storage_method']['#options'];
+  $consent_storage_plugins = ctools_get_plugins('cookie_consent_banner', 'cookie_consent_storage');
+  foreach ($consent_storage_plugins as $key => $consent_storage_plugin) {
+    $consent_storage_options[$key] = $consent_storage_plugin['title'];
+  }
+  $form['consent_storage']['eu_cookie_compliance']['consent_storage_method']['#options'] = $consent_storage_options;
+
+  $form['#attached']['css'][] = drupal_get_path('module', 'cookie_consent_banner') . '/css/cookie_consent_banner.css';
+  $form['#submit'][] = 'cookie_consent_banner_admin_form_submit_handler';
+}
+
+/**
+ * Submit handler cookie_consent_banner_admin_form_submit_handler.
+ */
+function cookie_consent_banner_admin_form_submit_handler($form, &$form_state) {
+  $form_state_values = $form_state['values'];
+  $eu_ccb_settings = array(
+    'customize_cookie_preferences_button_label' => $form_state_values['eu_cookie_compliance']['customize_cookie_preferences_button_label'],
+  );
+  variable_set('eu_ccb_settings', $eu_ccb_settings);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function cookie_consent_banner_form_eu_cookie_compliance_admin_categories_form_alter(&$form, &$form_state, $form_id) {
+  $categories = variable_get('eu_cookie_compliance_categories', array());
+  $options_list = get_cookie_category_checkbox_default_state_options_list();
+  foreach ($categories as $machine_name => $category) {
+    $form['categories'][$machine_name]['checkbox_default_state'] = array(
+      '#markup' => isset($options_list[$category['checkbox_default_state']]) ? $options_list[$category['checkbox_default_state']] : $options_list['unchecked'],
+    );
+  }
+  $form['#attached']['js'][] = drupal_get_path('module', 'cookie_consent_banner') . '/js/cookie_consent_banner.js';
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function cookie_consent_banner_form_eu_cookie_compliance_admin_category_form_alter(&$form, &$form_state, $form_id) {
+  $form['checkbox_default_state']['#title'] = t('Category default state');
+  $form['checkbox_default_state']['#options'] = get_cookie_category_checkbox_default_state_options_list();
+}
+
+/**
+ * Returns an associative array of keys and labels for use in #options.
+ *
+ * @return array
+ *   The options list for cookie default checkbox states.
+ */
+function get_cookie_category_checkbox_default_state_options_list() {
+  return array(
+    'unchecked' => t('Opted-out by default'),
+    'checked' => t('Opted-in by default'),
+    'required' => t('Opted-in and always active (i.e., user cannot opt-out)'),
+  );
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function cookie_consent_banner_theme_registry_alter(&$theme_registry) {
+  $theme_registry['eu_cookie_compliance_popup_info']['path'] = drupal_get_path('module', 'cookie_consent_banner').'/templates';
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function cookie_consent_banner_ctools_plugin_directory($module, $plugin) {
+  if ($module === 'cookie_consent_banner' && !empty($plugin)) {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function cookie_consent_banner_ctools_plugin_type() {
+  $plugins = array();
+  $plugins['cookie_consent_storage'] = array();
+  return $plugins;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function cookie_consent_banner_menu_alter(&$items) {
+  $items['eu-cookie-compliance/store_consent/%']['page callback'] = 'cookie_consent_banner_store_consent';
+}
+
+/**
+ * Callback for the consent storage JSON call.
+ *
+ * @param string $type
+ *   The type of consent. 'banner' or form ID.
+ */
+function cookie_consent_banner_store_consent($type) {
+  ctools_include('plugins');
+
+  $type = check_plain($type);
+  $consent_storage_method = eu_cookie_compliance_get_settings('consent_storage_method');
+  if ($consent_storage_method === 'do_not_store' || $consent_storage_method === '') {
+    drupal_json_output(NULL);
+    drupal_exit();
+  }
+
+  // Get plugin.
+  $consent_storage_plugin = ctools_get_plugins('eu_cookie_compliance', 'consent_storage', $consent_storage_method);
+  if (!empty($consent_storage_plugin['consent_storage_callback'])) {
+    $consent_storage_function = $consent_storage_plugin['consent_storage_callback'];
+    if ($consent_storage_function !== '') {
+      $result = $consent_storage_function($type);
+      drupal_json_output($result);
+      drupal_exit();
+    }
+  }
+
+  // Get plugin.
+  $consent_storage_plugin = ctools_get_plugins('cookie_consent_banner', 'cookie_consent_storage', $consent_storage_method);
+  if (!empty($consent_storage_plugin['cookie_consent_storage_callback'])) {
+    $consent_storage_function = $consent_storage_plugin['cookie_consent_storage_callback'];
+    if ($consent_storage_function !== '') {
+      $result = $consent_storage_function($type);
+      drupal_json_output($result);
+      drupal_exit();
+    }
+  }
+
+  drupal_json_output(NULL);
+  drupal_exit();
+}

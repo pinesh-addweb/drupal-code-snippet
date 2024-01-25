@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * Installation file.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function cookie_consent_banner_schema() {
+  $schema = array();
+  $schema['cookie_compliance_basic_consent'] = array(
+    'description' => 'Basic consent storage for EU Cookie Compliance / GDPR.',
+    'fields' => array(
+      'unique_key' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique consent storage ID.',
+      ),
+      'ip_address' => array(
+        'description' => 'The IP address.',
+        'type' => 'varchar',
+        'length' => 45,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'timestamp' => array(
+        'description' => 'Time of consent.',
+        'type' => 'int',
+        'unsigned' => FALSE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'page_url' => array(
+        'description' => 'The Page Url.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      'browser_agent' => array(
+        'description' => 'Details of the user browser.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      'consent_choice' => array(
+        'description' => 'The user’s consent choice for a specific cookie category.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      'consent_method' => array(
+        'description' => 'The action the user took to provide consent.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      'policy_version' => array(
+        'description' => 'Then Cookie policy version.',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'banner_message' => array(
+        'description' => 'The type of consent, such as "banner" for the banner and form_id for forms.',
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+    ),
+    'primary key' => array('unique_key'),
+    'indexes' => array(
+      'ip_address' => array('ip_address'),
+    ),
+    'foreign keys' => array(
+      'ip_address' => array('users' => 'ip_address'),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function cookie_consent_banner_update_7001() {
+  $eu_cookie_settings = variable_get('eu_cookie_compliance', array());
+  $eu_cookie_settings['consent_storage_method'] = 'cookie_basic';
+  variable_set('eu_cookie_compliance', $eu_cookie_settings);
+
+  module_load_include('module', 'eu_cookie_compliance', 'eu_cookie_compliance');
+  eu_cookie_compliance_clear_caches();
+}
